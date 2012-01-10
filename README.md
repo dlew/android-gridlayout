@@ -15,7 +15,7 @@ Usage
 
 This is a copy of the GridLayout from Android, so its usage is very similar.  The only
 difference is that some attributes you will need to use your project's namespace instead
-of the android namespace to use:
+of the android namespace:
 
     <com.gridlayout.GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:gridlayout="http://schemas.android.com/apk/res/com.mycompany.myapp"
