@@ -34,5 +34,3 @@ of ViewGroup, it is necessary to call `GridLayout.notifyChildVisibilityChanged()
 whenever you change the visibility of a child View of a GridLayout.
 
 If you never change the visibility of children, you don't have to worry about this.
-Likewise, if you are only supporting Android 3.0 or above, you also don't have to worry
-about this.

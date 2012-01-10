@@ -29,7 +29,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -2533,34 +2532,7 @@ public class GridLayout extends ViewGroup {
     // versions of Android.  As a compromise, the method below should be 
     // called whenever the visibility of children change.
 
-    private static Method mViewGroup_OnChildVisibilityChangedMethod;
-
-    static {
-        try {
-            mViewGroup_OnChildVisibilityChangedMethod = ViewGroup.class.getMethod("onChildVisibilityChanged",
-                    View.class, int.class);
-        }
-        catch (NoSuchMethodException e) {
-            Log.d(TAG, "ViewGroup.onChildVisibilityChanged() does not exist; depending on notifyChildVisibilityChanged().");
-        }
-    }
-
     public void notifyChildVisibilityChanged() {
-        if (mViewGroup_OnChildVisibilityChangedMethod == null) {
-            invalidateStructure();
-        }
-    }
-
-    protected void onChildVisibilityChanged(View child, int visibility) {
-        if (mViewGroup_OnChildVisibilityChangedMethod != null) {
-            try {
-                mViewGroup_OnChildVisibilityChangedMethod.invoke(this, child, visibility);
-                invalidateStructure();
-            }
-            catch (Exception e) {
-                Log.w(TAG, "Could not use onChildVisibilityChanged(); falling back to depending on notifyChildVisibilityChanged()");
-                mViewGroup_OnChildVisibilityChangedMethod = null;
-            }
-        }
+        invalidateStructure();
     }
 }
