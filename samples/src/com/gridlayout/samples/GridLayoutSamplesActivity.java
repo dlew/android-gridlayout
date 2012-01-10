@@ -22,9 +22,14 @@ public class GridLayoutSamplesActivity extends ListActivity {
         if (item.equals(SAMPLE_SIMPLE)) {
             startActivity(new Intent(this, SimpleGridLayoutActivity.class));
         }
+        else if (item.equals(SAMPLE_VISIBILITY)) {
+            startActivity(new Intent(this, GridLayoutVisibilityActivity.class));
+        }
     }
 
     private static final String SAMPLE_SIMPLE = "Simple GridLayout Activity";
 
-    private static final String[] SAMPLES = new String[] { SAMPLE_SIMPLE };
+    private static final String SAMPLE_VISIBILITY = "GridLayout Visibility Activity";
+
+    private static final String[] SAMPLES = new String[] { SAMPLE_SIMPLE, SAMPLE_VISIBILITY };
 }

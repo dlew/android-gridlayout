@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.gridlayout.GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:gridlayout="http://schemas.android.com/apk/res/com.gridlayout.samples"
+    android:id="@+id/grid_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    gridlayout:alignmentMode="alignBounds"
+    gridlayout:columnCount="2"
+    gridlayout:columnOrderPreserved="false"
+    gridlayout:useDefaultMargins="true" >
+
+    <Button
+        android:id="@+id/button"
+        gridlayout:layout_columnSpan="2"
+        android:layout_gravity="center_horizontal"
+        android:text="Toggle Visibility"
+        android:textSize="16dip" />
+
+    <TextView
+        android:id="@+id/textview1"
+        android:layout_gravity="center_horizontal"
+        android:text="TextView 1"
+        android:textSize="16dip" />
+
+    <TextView
+        android:id="@+id/textview2"
+        android:layout_gravity="center_horizontal"
+        android:text="TextView 2"
+        android:textSize="16dip" />
+
+</com.gridlayout.GridLayout>

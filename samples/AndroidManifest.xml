@@ -20,6 +20,8 @@
         </activity>
 
         <activity android:name=".SimpleGridLayoutActivity" />
+
+        <activity android:name=".GridLayoutVisibilityActivity" />
     </application>
 
 </manifest>
