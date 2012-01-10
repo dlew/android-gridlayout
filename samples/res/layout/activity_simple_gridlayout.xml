@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.gridlayout.GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:gridlayout="http://schemas.android.com/apk/res/com.gridlayout.samples"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    gridlayout:alignmentMode="alignBounds"
+    gridlayout:columnCount="4"
+    gridlayout:columnOrderPreserved="false"
+    gridlayout:useDefaultMargins="true" >
+
+    <TextView
+        gridlayout:layout_columnSpan="4"
+        android:layout_gravity="center_horizontal"
+        android:text="Email setup"
+        android:textSize="32dip" />
+
+    <TextView
+        gridlayout:layout_columnSpan="4"
+        android:layout_gravity="left"
+        android:text="You can configure email in just a few steps:"
+        android:textSize="16dip" />
+
+    <TextView
+        android:layout_gravity="right"
+        android:text="Email address:" />
+
+    <EditText android:ems="10" />
+
+    <TextView
+        android:layout_column="0"
+        android:layout_gravity="right"
+        android:text="Password:" />
+
+    <EditText android:ems="8" />
+
+    <com.gridlayout.Space
+        android:layout_column="0"
+        android:layout_columnSpan="3"
+        android:layout_gravity="fill"
+        android:layout_row="4" />
+
+    <Button
+        android:layout_column="3"
+        android:layout_row="5"
+        android:text="Next" >
+    </Button>
+
+</com.gridlayout.GridLayout>
