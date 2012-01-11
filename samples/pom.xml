@@ -35,13 +35,14 @@
 		<plugins>
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
-				<artifactId>maven-android-plugin</artifactId>
+				<artifactId>android-maven-plugin</artifactId>
 				<extensions>true</extensions>
 			</plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.8</version>
 				<configuration>
 					<skip>true</skip>
 				</configuration>
@@ -62,7 +63,8 @@
 				<plugins>
 					<plugin>
 						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
-						<artifactId>maven-android-plugin</artifactId>
+						<artifactId>android-maven-plugin</artifactId>
+						<version>${android-maven.version}</version>
 						<inherited>true</inherited>
 						<configuration>
 							<zipalign>
