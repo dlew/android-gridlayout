@@ -16,17 +16,18 @@
 
 package com.gridlayout;
 
-import static android.view.Gravity.AXIS_PULL_AFTER;
-import static android.view.Gravity.AXIS_PULL_BEFORE;
-import static android.view.Gravity.AXIS_SPECIFIED;
-import static android.view.Gravity.AXIS_X_SHIFT;
-import static android.view.Gravity.AXIS_Y_SHIFT;
-import static android.view.Gravity.HORIZONTAL_GRAVITY_MASK;
-import static android.view.Gravity.VERTICAL_GRAVITY_MASK;
-import static android.view.View.MeasureSpec.EXACTLY;
-import static android.view.View.MeasureSpec.makeMeasureSpec;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.util.Pair;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -35,35 +36,186 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import android.content.Context;
-import android.content.res.TypedArray;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import static android.view.Gravity.*;
+import static android.view.View.MeasureSpec.EXACTLY;
+import static android.view.View.MeasureSpec.makeMeasureSpec;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
- * This is a fully backwards-compatible version of GridLayout, which works
- * all the way back to Android 1.5.
- * 
- * IMPORTANT: There is one difference between this GridLayout and the one
- * the default.  When you change the visibility of a child View, you must
- * also call GridLayout.notifyChildVisibilityChanged().  This workaround
- * exists because there is no other way to detect child visibility changes
- * in a ViewGroup on older versions of Android.
- * 
- * Projects using this class must use at least Android SDK 11+.  (It is
- * compatible back to 1.5, but wraps potentially beneficial methods for
- * newer versions of Android.)
- * 
- * @author Daniel Lew (danlew42@gmail.com)
+ * A layout that places its children in a rectangular <em>grid</em>.
+ * <p>
+ * The grid is composed of a set of infinitely thin lines that separate the
+ * viewing area into <em>cells</em>. Throughout the API, grid lines are referenced
+ * by grid <em>indices</em>. A grid with {@code N} columns
+ * has {@code N + 1} grid indices that run from {@code 0}
+ * through {@code N} inclusive. Regardless of how GridLayout is
+ * configured, grid index {@code 0} is fixed to the leading edge of the
+ * container and grid index {@code N} is fixed to its trailing edge
+ * (after padding is taken into account).
+ *
+ * <h4>Row and Column Specs</h4>
+ *
+ * Children occupy one or more contiguous cells, as defined
+ * by their {@link GridLayout.LayoutParams#rowSpec rowSpec} and
+ * {@link GridLayout.LayoutParams#columnSpec columnSpec} layout parameters.
+ * Each spec defines the set of rows or columns that are to be
+ * occupied; and how children should be aligned within the resulting group of cells.
+ * Although cells do not normally overlap in a GridLayout, GridLayout does
+ * not prevent children being defined to occupy the same cell or group of cells.
+ * In this case however, there is no guarantee that children will not themselves
+ * overlap after the layout operation completes.
+ *
+ * <h4>Default Cell Assignment</h4>
+ *
+ * If a child does not specify the row and column indices of the cell it
+ * wishes to occupy, GridLayout assigns cell locations automatically using its:
+ * {@link GridLayout#setOrientation(int) orientation},
+ * {@link GridLayout#setRowCount(int) rowCount} and
+ * {@link GridLayout#setColumnCount(int) columnCount} properties.
+ *
+ * <h4>Space</h4>
+ *
+ * Space between children may be specified either by using instances of the
+ * dedicated {@link Space} view or by setting the
+ *
+ * {@link ViewGroup.MarginLayoutParams#leftMargin leftMargin},
+ * {@link ViewGroup.MarginLayoutParams#topMargin topMargin},
+ * {@link ViewGroup.MarginLayoutParams#rightMargin rightMargin} and
+ * {@link ViewGroup.MarginLayoutParams#bottomMargin bottomMargin}
+ *
+ * layout parameters. When the
+ * {@link GridLayout#setUseDefaultMargins(boolean) useDefaultMargins}
+ * property is set, default margins around children are automatically
+ * allocated based on the prevailing UI style guide for the platform.
+ * Each of the margins so defined may be independently overridden by an assignment
+ * to the appropriate layout parameter.
+ * Default values will generally produce a reasonable spacing between components
+ * but values may change between different releases of the platform.
+ *
+ * <h4>Excess Space Distribution</h4>
+ *
+ * GridLayout's distribution of excess space is based on <em>priority</em>
+ * rather than <em>weight</em>.
+ * <p>
+ * A child's ability to stretch is inferred from the alignment properties of
+ * its row and column groups (which are typically set by setting the
+ * {@link LayoutParams#setGravity(int) gravity} property of the child's layout parameters).
+ * If alignment was defined along a given axis then the component
+ * is taken as <em>flexible</em> in that direction. If no alignment was set,
+ * the component is instead assumed to be <em>inflexible</em>.
+ * <p>
+ * Multiple components in the same row or column group are
+ * considered to act in <em>parallel</em>. Such a
+ * group is flexible only if <em>all</em> of the components
+ * within it are flexible. Row and column groups that sit either side of a common boundary
+ * are instead considered to act in <em>series</em>. The composite group made of these two
+ * elements is flexible if <em>one</em> of its elements is flexible.
+ * <p>
+ * To make a column stretch, make sure all of the components inside it define a
+ * gravity. To prevent a column from stretching, ensure that one of the components
+ * in the column does not define a gravity.
+ * <p>
+ * When the principle of flexibility does not provide complete disambiguation,
+ * GridLayout's algorithms favour rows and columns that are closer to its <em>right</em>
+ * and <em>bottom</em> edges.
+ *
+ * <h5>Limitations</h5>
+ *
+ * GridLayout does not provide support for the principle of <em>weight</em>, as defined in
+ * {@link LinearLayout.LayoutParams#weight}. In general, it is not therefore possible
+ * to configure a GridLayout to distribute excess space in non-trivial proportions between
+ * multiple rows or columns.
+ * <p>
+ * Some common use-cases may nevertheless be accommodated as follows.
+ * To place equal amounts of space around a component in a cell group;
+ * use {@link #CENTER} alignment (or {@link LayoutParams#setGravity(int) gravity}).
+ * For complete control over excess space distribution in a row or column;
+ * use a {@link LinearLayout} subview to hold the components in the associated cell group.
+ * When using either of these techniques, bear in mind that cell groups may be defined to overlap.
+ * <p>
+ * See {@link GridLayout.LayoutParams} for a full description of the
+ * layout parameters used by GridLayout.
+ *
+ * @attr ref android.R.styleable#GridLayout_orientation
+ * @attr ref android.R.styleable#GridLayout_rowCount
+ * @attr ref android.R.styleable#GridLayout_columnCount
+ * @attr ref android.R.styleable#GridLayout_useDefaultMargins
+ * @attr ref android.R.styleable#GridLayout_rowOrderPreserved
+ * @attr ref android.R.styleable#GridLayout_columnOrderPreserved
  */
 public class GridLayout extends ViewGroup {
+
+    /* XXX Mimics com.android.internal.R */
+    private static final class R {
+        private static final class styleable {
+            private static final int[] GridLayout = new int[] {
+                /*0*/ android.R.attr.orientation,
+                /*1*/ android.R.attr.rowCount,
+                /*2*/ android.R.attr.rowOrderPreserved,
+                /*3*/ android.R.attr.columnCount,
+                /*4*/ android.R.attr.columnOrderPreserved,
+                /*5*/ android.R.attr.useDefaultMargins,
+                /*6*/ android.R.attr.alignmentMode,
+            };
+            private static final int GridLayout_orientation = 0;
+            private static final int GridLayout_rowCount = 1;
+            private static final int GridLayout_columnCount = 3;
+            private static final int GridLayout_useDefaultMargins = 5;
+            private static final int GridLayout_alignmentMode = 6;
+            private static final int GridLayout_rowOrderPreserved = 2;
+            private static final int GridLayout_columnOrderPreserved = 4;
+
+            private static final int[] GridLayout_Layout = new int[] {
+                /*0*/ android.R.attr.gravity,
+                /*1*/ android.R.attr.layout_column,
+                /*2*/ android.R.attr.layout_row,
+                /*3*/ android.R.attr.layout_rowSpan,
+                /*4*/ android.R.attr.layout_columnSpan,
+            };
+            private static final int GridLayout_Layout_layout_column = 1;
+            private static final int GridLayout_Layout_layout_columnSpan = 4;
+            private static final int GridLayout_Layout_layout_row = 2;
+            private static final int GridLayout_Layout_layout_rowSpan = 3;
+            private static final int GridLayout_Layout_layout_gravity = 0;
+
+            private static final int[] ViewGroup_MarginLayout = new int[] {
+                /*0*/ android.R.attr.layout_margin,
+                /*1*/ android.R.attr.layout_marginLeft,
+                /*2*/ android.R.attr.layout_marginTop,
+                /*3*/ android.R.attr.layout_marginRight,
+                /*4*/ android.R.attr.layout_marginBottom,
+            };
+            private static final int ViewGroup_MarginLayout_layout_margin = 0;
+            private static final int ViewGroup_MarginLayout_layout_marginLeft = 1;
+            private static final int ViewGroup_MarginLayout_layout_marginTop = 2;
+            private static final int ViewGroup_MarginLayout_layout_marginRight = 3;
+            private static final int ViewGroup_MarginLayout_layout_marginBottom = 4;
+        }
+    }
+
+    /* XXX From android.view.View */
+    public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
+        int result = size;
+        int specMode = MeasureSpec.getMode(measureSpec);
+        int specSize =  MeasureSpec.getSize(measureSpec);
+        switch (specMode) {
+        case MeasureSpec.UNSPECIFIED:
+            result = size;
+            break;
+        case MeasureSpec.AT_MOST:
+            if (specSize < size) {
+                result = specSize | MEASURED_STATE_TOO_SMALL;
+            } else {
+                result = size;
+            }
+            break;
+        case MeasureSpec.EXACTLY:
+            result = specSize;
+            break;
+        }
+        return result | (childMeasuredState&MEASURED_STATE_MASK);
+    }
 
     // Public constants
 
@@ -139,7 +291,7 @@ public class GridLayout extends ViewGroup {
 
     // TypedArray indices
 
-    private static final int ORIENTATION = R.styleable.GridLayout_android_orientation;
+    private static final int ORIENTATION = R.styleable.GridLayout_orientation;
     private static final int ROW_COUNT = R.styleable.GridLayout_rowCount;
     private static final int COLUMN_COUNT = R.styleable.GridLayout_columnCount;
     private static final int USE_DEFAULT_MARGINS = R.styleable.GridLayout_useDefaultMargins;
@@ -156,6 +308,7 @@ public class GridLayout extends ViewGroup {
     boolean useDefaultMargins = DEFAULT_USE_DEFAULT_MARGINS;
     int alignmentMode = DEFAULT_ALIGNMENT_MODE;
     int defaultGap;
+    OnHierarchyChangeListener mListener; //XXX See {@link #setOnHierarchyChangeListener()}
 
     // Constructors
 
@@ -167,7 +320,8 @@ public class GridLayout extends ViewGroup {
         if (DEBUG) {
             setWillNotDraw(false);
         }
-        defaultGap = context.getResources().getDimensionPixelOffset(R.dimen.default_gap);
+        //XXX defaultGap = context.getResources().getDimensionPixelOffset(android.R.dimen.default_gap);
+        defaultGap = (int)(context.getResources().getDisplayMetrics().density * 16/*dp*/);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.GridLayout);
         try {
             setRowCount(a.getInt(ROW_COUNT, DEFAULT_COUNT));
@@ -180,9 +334,26 @@ public class GridLayout extends ViewGroup {
         } finally {
             a.recycle();
         }
+        //XXX For add/remove events
+        super.setOnHierarchyChangeListener(new ViewGroup.OnHierarchyChangeListener() {
+            @Override
+            public void onChildViewAdded(View parent, View child) {
+                if (mListener != null) {
+                    mListener.onChildViewAdded(parent, child);
+                }
 
-        // Set our own custom hierarchy listener, so we can properly implement onViewAdded() and onViewRemoved()
-        super.setOnHierarchyChangeListener(GRIDLAYOUT_LISTENER);
+                invalidateStructure();
+            }
+
+            @Override
+            public void onChildViewRemoved(View parent, View child) {
+                if (mListener != null) {
+                    mListener.onChildViewRemoved(parent, child);
+                }
+
+                invalidateStructure();
+            }
+        });
     }
 
     /**
@@ -198,6 +369,14 @@ public class GridLayout extends ViewGroup {
     public GridLayout(Context context) {
         //noinspection NullableProblems
         this(context, null);
+    }
+
+
+    // XXX Store any listeners locally so we can listen to our own events
+    // in the superclass implementation
+    @Override
+    public void setOnHierarchyChangeListener(OnHierarchyChangeListener listener) {
+        mListener = listener;
     }
 
     // Implementation
@@ -734,6 +913,48 @@ public class GridLayout extends ViewGroup {
         }
     }
 
+    // Add/remove
+
+    /**
+     * @hide
+     */
+    /*XXX @Override
+    protected void onViewAdded(View child) {
+        super.onViewAdded(child);
+        invalidateStructure();
+    }*/
+
+    /**
+     * @hide
+     */
+    /*XXX @Override
+    protected void onViewRemoved(View child) {
+        super.onViewRemoved(child);
+        invalidateStructure();
+    }*/
+
+    /**
+     * We need to call invalidateStructure() when a child's GONE flag changes state.
+     * This implementation is a catch-all, invalidating on any change in the visibility flags.
+     *
+     * @hide
+     */
+    /*TODO @Override
+    protected void onChildVisibilityChanged(View child, int visibility) {
+        super.onChildVisibilityChanged(child, visibility);
+        invalidateStructure();
+    }*/
+    /**
+     * We need to call {@code invalidateStructure()} when a child's GONE flag
+     * changes state. However, the API 14's implementation depends on
+     * {@link ViewGroup#onChildVisibilityChanged()} which is nonexistant in
+     * older verions of Android. As a compromise, this method should be called
+     * whenever the visibility of the grid children change.
+     */
+    public void notifyChildVisibilityChanged() {
+        invalidateStructure();
+    }
+
     // Measurement
 
     final boolean isGone(View c) {
@@ -802,16 +1023,9 @@ public class GridLayout extends ViewGroup {
         int measuredWidth = Math.max(hPadding + width, getSuggestedMinimumWidth());
         int measuredHeight = Math.max(vPadding + height, getSuggestedMinimumHeight());
 
-        if (mResolveSizeAndStateAvailable) {
-            measuredWidth = ResolveSizeAndStateWrapper.resolveSizeAndState(measuredWidth, widthSpec, 0);
-            measuredHeight = ResolveSizeAndStateWrapper.resolveSizeAndState(measuredHeight, heightSpec, 0);
-        }
-        else {
-            measuredWidth = resolveSize(measuredWidth, widthSpec);
-            measuredHeight = resolveSize(measuredHeight, heightSpec);
-        }
-
-        setMeasuredDimension(measuredWidth, measuredHeight);
+        setMeasuredDimension(
+                resolveSizeAndState(measuredWidth, widthSpec, 0),
+                resolveSizeAndState(measuredHeight, heightSpec, 0));
     }
 
     private int protect(int alignment) {
@@ -1616,21 +1830,21 @@ public class GridLayout extends ViewGroup {
 
         // TypedArray indices
 
-        private static final int MARGIN = R.styleable.ViewGroup_MarginLayout_android_layout_margin;
-        private static final int LEFT_MARGIN = R.styleable.ViewGroup_MarginLayout_android_layout_marginLeft;
-        private static final int TOP_MARGIN = R.styleable.ViewGroup_MarginLayout_android_layout_marginTop;
+        private static final int MARGIN = R.styleable.ViewGroup_MarginLayout_layout_margin;
+        private static final int LEFT_MARGIN = R.styleable.ViewGroup_MarginLayout_layout_marginLeft;
+        private static final int TOP_MARGIN = R.styleable.ViewGroup_MarginLayout_layout_marginTop;
         private static final int RIGHT_MARGIN =
-                R.styleable.ViewGroup_MarginLayout_android_layout_marginRight;
+                R.styleable.ViewGroup_MarginLayout_layout_marginRight;
         private static final int BOTTOM_MARGIN =
-                R.styleable.ViewGroup_MarginLayout_android_layout_marginBottom;
+                R.styleable.ViewGroup_MarginLayout_layout_marginBottom;
 
-        private static final int COLUMN = R.styleable.GridLayout_Layout_android_layout_column;
+        private static final int COLUMN = R.styleable.GridLayout_Layout_layout_column;
         private static final int COLUMN_SPAN = R.styleable.GridLayout_Layout_layout_columnSpan;
 
         private static final int ROW = R.styleable.GridLayout_Layout_layout_row;
         private static final int ROW_SPAN = R.styleable.GridLayout_Layout_layout_rowSpan;
 
-        private static final int GRAVITY = R.styleable.GridLayout_Layout_android_layout_gravity;
+        private static final int GRAVITY = R.styleable.GridLayout_Layout_layout_gravity;
 
         // Instance variables
 
@@ -2412,127 +2626,4 @@ public class GridLayout extends ViewGroup {
     private static final int INFLEXIBLE = 0;
 
     private static final int CAN_STRETCH = 2;
-
-    //////////////////////////////////////////////////////////////////////////
-    // Pair
-    //
-    // Older versions of Android do not have this class, so here's a local
-    // version for backwards compatibility
-
-    private static class Pair<F, S> {
-        public final F first;
-        public final S second;
-
-        public Pair(F first, S second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public boolean equals(Object o) {
-            if (o == this)
-                return true;
-            if (!(o instanceof Pair))
-                return false;
-            final Pair<F, S> other;
-            try {
-                other = (Pair<F, S>) o;
-            }
-            catch (ClassCastException e) {
-                return false;
-            }
-            return first.equals(other.first) && second.equals(other.second);
-        }
-
-        public int hashCode() {
-            int result = 17;
-            result = 31 * result + first.hashCode();
-            result = 31 * result + second.hashCode();
-            return result;
-        }
-
-        public static <A, B> Pair<A, B> create(A a, B b) {
-            return new Pair<A, B>(a, b);
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // Wrapped OnHierarchyChangeListener
-    //
-    // We need to listen to hierarchy changes ourselves, so we set our own
-    // listener in the constructor then handle setting of a custom listener
-    // for anyone else who wants to consume these events.
-
-    private OnHierarchyChangeListener mListener;
-
-    private final OnHierarchyChangeListener GRIDLAYOUT_LISTENER = new OnHierarchyChangeListener() {
-        public void onChildViewRemoved(View parent, View child) {
-            if (mListener != null) {
-                mListener.onChildViewRemoved(parent, child);
-            }
-
-            invalidateStructure();
-        }
-
-        public void onChildViewAdded(View parent, View child) {
-            if (mListener != null) {
-                mListener.onChildViewAdded(parent, child);
-            }
-
-            invalidateStructure();
-        }
-    };
-
-    @Override
-    public void setOnHierarchyChangeListener(OnHierarchyChangeListener listener) {
-        mListener = listener;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // resolveSizeAndState() wrapper
-    //
-    // This newer method of measurement was introduced in API 11, so we
-    // conditionally use it if available.
-
-    private static boolean mResolveSizeAndStateAvailable;
-
-    static {
-        try {
-            ResolveSizeAndStateWrapper.checkAvailable();
-            mResolveSizeAndStateAvailable = true;
-        }
-        catch (Throwable t) {
-            mResolveSizeAndStateAvailable = false;
-        }
-    }
-
-    private static class ResolveSizeAndStateWrapper {
-        static {
-            try {
-                View.class.getMethod("resolveSizeAndState", int.class, int.class, int.class);
-            }
-            catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        public static void checkAvailable() {
-        }
-
-        public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
-            return View.resolveSizeAndState(size, measureSpec, childMeasuredState);
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // Notifications of child visibility changes
-    //
-    // We need to call invalidateStructure() when a child's GONE flag changes
-    // state. However, the API 14's implementation depends on
-    // ViewGroup.onChildVisibilityChanged(), which is nonexistant in older
-    // versions of Android.  As a compromise, the method below should be 
-    // called whenever the visibility of children change.
-
-    public void notifyChildVisibilityChanged() {
-        invalidateStructure();
-    }
 }

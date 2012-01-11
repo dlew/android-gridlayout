@@ -1,5 +1,23 @@
-bin/
-gen/
-.settings/
+#Android
+bin
+gen
+
+#Eclipse
 .project
 .classpath
+.settings
+.checkstyle
+
+#IntelliJ IDEA
+.idea
+*.iml
+*.ipr
+*.iws
+
+#Maven
+target
+release.properties
+pom.xml.*
+
+#OSX
+.DS_Store

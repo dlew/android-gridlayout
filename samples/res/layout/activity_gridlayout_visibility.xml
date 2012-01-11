@@ -4,14 +4,14 @@
     android:id="@+id/grid_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    gridlayout:alignmentMode="alignBounds"
-    gridlayout:columnCount="2"
-    gridlayout:columnOrderPreserved="false"
-    gridlayout:useDefaultMargins="true" >
+    android:alignmentMode="alignBounds"
+    android:columnCount="2"
+    android:columnOrderPreserved="false"
+    android:useDefaultMargins="true" >
 
     <Button
         android:id="@+id/button"
-        gridlayout:layout_columnSpan="2"
+        android:layout_columnSpan="2"
         android:layout_gravity="center_horizontal"
         android:text="Toggle Visibility"
         android:textSize="16dip" />

@@ -3,19 +3,19 @@
     xmlns:gridlayout="http://schemas.android.com/apk/res/com.gridlayout.samples"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    gridlayout:alignmentMode="alignBounds"
-    gridlayout:columnCount="4"
-    gridlayout:columnOrderPreserved="false"
-    gridlayout:useDefaultMargins="true" >
+    android:alignmentMode="alignBounds"
+    android:columnCount="4"
+    android:columnOrderPreserved="false"
+    android:useDefaultMargins="true" >
 
     <TextView
-        gridlayout:layout_columnSpan="4"
+        android:layout_columnSpan="4"
         android:layout_gravity="center_horizontal"
         android:text="Email setup"
         android:textSize="32dip" />
 
     <TextView
-        gridlayout:layout_columnSpan="4"
+        android:layout_columnSpan="4"
         android:layout_gravity="left"
         android:text="You can configure email in just a few steps:"
         android:textSize="16dip" />
