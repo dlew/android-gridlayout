@@ -137,6 +137,12 @@ import static java.lang.Math.min;
  * See {@link GridLayout.LayoutParams} for a full description of the
  * layout parameters used by GridLayout.
  *
+ * <p><b>Important:</b> There is one difference between this class and
+ * {@link android.widget.GridLayout}. When you change the visibility of a child
+ * view you must also call {@link #notifyChildVisibilityChanged()}. This
+ * workaround exists because there is no way to detect child visibility changes
+ * in a {@link ViewGroup} on older versions of Android.</p>
+ *
  * @attr ref android.R.styleable#GridLayout_orientation
  * @attr ref android.R.styleable#GridLayout_rowCount
  * @attr ref android.R.styleable#GridLayout_columnCount
