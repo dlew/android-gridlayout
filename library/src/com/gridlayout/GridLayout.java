@@ -199,29 +199,6 @@ public class GridLayout extends ViewGroup {
         }
     }
 
-    /* XXX From android.view.View */
-    public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
-        int result = size;
-        int specMode = MeasureSpec.getMode(measureSpec);
-        int specSize =  MeasureSpec.getSize(measureSpec);
-        switch (specMode) {
-        case MeasureSpec.UNSPECIFIED:
-            result = size;
-            break;
-        case MeasureSpec.AT_MOST:
-            if (specSize < size) {
-                result = specSize | MEASURED_STATE_TOO_SMALL;
-            } else {
-                result = size;
-            }
-            break;
-        case MeasureSpec.EXACTLY:
-            result = specSize;
-            break;
-        }
-        return result | (childMeasuredState&MEASURED_STATE_MASK);
-    }
-
     // Public constants
 
     /**
@@ -1028,9 +1005,16 @@ public class GridLayout extends ViewGroup {
         int measuredWidth = Math.max(hPadding + width, getSuggestedMinimumWidth());
         int measuredHeight = Math.max(vPadding + height, getSuggestedMinimumHeight());
 
-        setMeasuredDimension(
-                resolveSizeAndState(measuredWidth, widthSpec, 0),
-                resolveSizeAndState(measuredHeight, heightSpec, 0));
+        if (mResolveSizeAndStateAvailable) {
+            measuredWidth = ResolveSizeAndStateWrapper.resolveSizeAndState(measuredWidth, widthSpec, 0);
+            measuredHeight = ResolveSizeAndStateWrapper.resolveSizeAndState(measuredHeight, heightSpec, 0);
+        }
+        else {
+            measuredWidth = resolveSize(measuredWidth, widthSpec);
+            measuredHeight = resolveSize(measuredHeight, heightSpec);
+        }
+
+        setMeasuredDimension(measuredWidth, measuredHeight);
     }
 
     private int protect(int alignment) {
@@ -2668,4 +2652,40 @@ public class GridLayout extends ViewGroup {
             return new Pair<A, B>(a, b);
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////
+    // resolveSizeAndState() wrapper
+    //
+    // This newer method of measurement was introduced in API 11, so we
+    // conditionally use it if available.
+
+    private static boolean mResolveSizeAndStateAvailable;
+
+    static {
+        try {
+            ResolveSizeAndStateWrapper.checkAvailable();
+            mResolveSizeAndStateAvailable = true;
+        }
+        catch (Throwable t) {
+            mResolveSizeAndStateAvailable = false;
+        }
+    }
+
+    private static class ResolveSizeAndStateWrapper {
+        static {
+            try {
+                View.class.getMethod("resolveSizeAndState", int.class, int.class, int.class);
+            }
+            catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        public static void checkAvailable() {}
+
+        public static int resolveSizeAndState(int size, int measureSpec, int childMeasuredState) {
+            return View.resolveSizeAndState(size, measureSpec, childMeasuredState);
+        }
+    }
+
 }
