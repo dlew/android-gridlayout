@@ -172,7 +172,7 @@ public class GridLayout extends ViewGroup {
             private static final int GridLayout_columnOrderPreserved = 4;
 
             private static final int[] GridLayout_Layout = new int[] {
-                /*0*/ android.R.attr.gravity,
+                /*0*/ android.R.attr.layout_gravity,
                 /*1*/ android.R.attr.layout_column,
                 /*2*/ android.R.attr.layout_row,
                 /*3*/ android.R.attr.layout_rowSpan,
